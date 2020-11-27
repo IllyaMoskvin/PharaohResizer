@@ -1,4 +1,5 @@
 *
 !.gitignore
+!idaout.py
 !offset.py
 !README.md
