@@ -20,6 +20,7 @@
 #     b. Get bytes that are different
 #  2. Uses IDAPython to process the differences:
 #     a. Maps file offsets to virtual addresses
+#     b. Validates that `cmp` bytes match IDA
 
 import sys
 import subprocess
@@ -62,16 +63,17 @@ if len(diffs) < 1:
     print >> sys.stderr, "files are identical"
     exit(1)
 
+# transform each line into a dictionary, parse values into numbers
 diffs = list(map(lambda line: (lambda args = line.split(): {
-    'old': format(int(args[1], 8), '02X'),
-    'new': format(int(args[2], 8), '02X'),
     # cmp returns the byte number, not the byte offset, e.g.
     # for difference at the first byte, it returns 1, not 0
     'offset': int(args[0], 10) - 1,
+    'old': int(args[1], 8),
+    'new': int(args[2], 8),
 })(), diffs))
 
 # convenience function for calling ida with a script and passing data around
-def call_ida(script, file, fieldnames, data, mapping):
+def call_ida(script, file, fieldnames, data, mapping=None):
     # clear output from previous script calls
     for csvfile in ['tmp-to-ida.csv', 'tmp-from-ida.csv']:
         if os.path.isfile(csvfile):
@@ -92,7 +94,7 @@ def call_ida(script, file, fieldnames, data, mapping):
     subprocess.check_output(['idaq.exe', '-S"' + script + '"', file])
 
     # borrowed from `import_data` in `idaout`
-    if os.path.isfile(file):
+    if os.path.isfile(file) and mapping != None:
         with open('tmp-from-ida.csv') as csvfile:
             output = list(map(lambda row: {
                 # https://stackoverflow.com/questions/12229064
@@ -104,7 +106,7 @@ def call_ida(script, file, fieldnames, data, mapping):
     return output
 
 # map file offsets in `cmp` results to virtual addresses
-addresses = call_ida(
+offset_addresses = call_ida(
     script = 'ida_get_addresses.py',
     file = idb_old,
     fieldnames = ['offset'],
@@ -114,6 +116,18 @@ addresses = call_ida(
         'address': lambda row: int(row['address']),
     }
 )
+
+# sanity check: throw exception if bytes returned by `cmp` don't match IDA
+for target in [(idb_old, 'old'), (idb_new, 'new')]:
+    call_ida(
+        script = 'ida_validate.py',
+        file = target[0],
+        fieldnames = ['address', 'byte'],
+        data = list(map(lambda oa: {
+            'address': oa['address'],
+            'byte': filter(lambda diff: diff['offset'] == oa['offset'], diffs)[0][target[1]]
+        }, offset_addresses))
+    )
 
 # everything below is dead code that's being reworked
 exit(0)
@@ -128,6 +142,7 @@ def consecutive_groups(iterable, ordering=lambda x: x):
 
 chunks = [n for n in consecutive_groups(diffs, lambda diff: diff['offset'])]
 
+#TODO: format(int(args[1], 8), '02X'),
 chunks = list(map(lambda diffs: {
     # https://stackoverflow.com/questions/51053227
     'offset': format(diffs[0]['offset'], '08X'),

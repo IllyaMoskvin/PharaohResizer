@@ -1,6 +1,7 @@
 *
 !.gitignore
 !ida_get_addresses.py
+!ida_validate.py
 !idaout.py
 !offset.py
 !README.md
