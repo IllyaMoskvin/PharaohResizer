@@ -38,21 +38,24 @@ for file in [file_old, file_new, idb_old, idb_new]:
         print >> sys.stderr, file + " not found"
         exit(1)
 
+# compare the two files using cmp (GNU diffutils) 3.7
 try:
     # https://www.freebsd.org/cgi/man.cgi?query=cmp
-    # for some reason, cmp returns offsets at +1 relative to every other tool tested
-    cmp_result = subprocess.check_output(['cmp', '-i', '1', '-l', sys.argv[1], sys.argv[2]])
+    cmp_result = subprocess.check_output(['cmp', '-l', sys.argv[1], sys.argv[2]])
 except subprocess.CalledProcessError, e:
     if e.returncode != 1: # ok if files differ
         raise
     cmp_result = e.output
 
+# transform result into an array of lines (strings)
 diffs = cmp_result.splitlines()
 
 diffs = list(map(lambda line: (lambda args = line.split(): {
-    'offset': int(args[0], 10),
     'old': format(int(args[1], 8), '02X'),
     'new': format(int(args[2], 8), '02X'),
+    # cmp returns the byte number, not the byte offset, e.g.
+    # for difference at the first byte, it returns 1, not 0
+    'offset': int(args[0], 10) - 1,
 })(), diffs))
 
 # https://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
