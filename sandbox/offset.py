@@ -25,16 +25,18 @@ if len(sys.argv) != 3:
     print >> sys.stderr, "Usage: ./offset.py Old.exe New.exe > offsets.yml"
     exit(1)
 
-file_old = sys.argv[1]
-file_new = sys.argv[2]
+file_old = os.path.abspath(sys.argv[1])
+file_new = os.path.abspath(sys.argv[2])
 
-if not os.path.isfile(file_old):
-    print >> sys.stderr, file_old + " not found"
-    exit(1)
+# you must manually launch IDAPro (32bit) and load the files to generate idb files
+idb_old = file_old[:len(file_old)-4] + '.idb'
+idb_new = file_new[:len(file_new)-4] + '.idb'
 
-if not os.path.isfile(file_new):
-    print >> sys.stderr, file_new + " not found"
-    exit(1)
+# make sure that the `exe` and `idb` files exist
+for file in [file_old, file_new, idb_old, idb_new]:
+    if not os.path.isfile(file):
+        print >> sys.stderr, file + " not found"
+        exit(1)
 
 try:
     # https://www.freebsd.org/cgi/man.cgi?query=cmp
