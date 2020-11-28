@@ -10,16 +10,23 @@
 # ...into a YAML file that looks like this:
 #
 #   - offset: '0000764B'
-#     old: 'A1 18 2A 5D'
-#     new: 'E8 20 6F 16'
+#     old: 'A1 18 2A 5D 00' # mov     eax, dword_5D2A18
+#     new: 'E8 20 6F 16 00' # call    sub_56E570
 #
-# ...and so on.
+# ...and so on. It does the following:
+#
+#  1. Uses `cmp` to get the following:
+#     a. Get offsets of differences
+#     b. Get bytes that are different
+#  2. Uses IDAPython to process the differences:
+#     a. Maps file offsets to virtual addresses
 
 import sys
 import subprocess
 import operator
 import itertools
-import os.path
+import os
+import csv
 
 if len(sys.argv) != 3:
     print >> sys.stderr, "Usage: ./offset.py Old.exe New.exe > offsets.yml"
@@ -62,6 +69,54 @@ diffs = list(map(lambda line: (lambda args = line.split(): {
     # for difference at the first byte, it returns 1, not 0
     'offset': int(args[0], 10) - 1,
 })(), diffs))
+
+# convenience function for calling ida with a script and passing data around
+def call_ida(script, file, fieldnames, data, mapping):
+    # clear output from previous script calls
+    for csvfile in ['tmp-to-ida.csv', 'tmp-from-ida.csv']:
+        if os.path.isfile(csvfile):
+            os.remove(csvfile)
+
+    # file should already be abs, but not script
+    script = os.path.abspath(script)
+    file = os.path.abspath(file)
+
+    # borrowed from `export_data` in `idaout`
+    with open('tmp-to-ida.csv', 'wb') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
+        writer.writeheader()
+        for datum in data:
+            writer.writerow(datum)
+
+    # https://www.hex-rays.com/products/ida/support/idadoc/417.shtml
+    subprocess.check_output(['idaq.exe', '-S"' + script + '"', file])
+
+    # borrowed from `import_data` in `idaout`
+    if os.path.isfile(file):
+        with open('tmp-from-ida.csv') as csvfile:
+            output = list(map(lambda row: {
+                # https://stackoverflow.com/questions/12229064
+                key: func(row) for key, func in mapping.items()
+            }, csv.DictReader(csvfile)))
+    else:
+        output = []
+
+    return output
+
+# map file offsets in `cmp` results to virtual addresses
+addresses = call_ida(
+    script = 'ida_get_addresses.py',
+    file = idb_old,
+    fieldnames = ['offset'],
+    data = diffs,
+    mapping = {
+        'offset': lambda row: int(row['offset']),
+        'address': lambda row: int(row['address']),
+    }
+)
+
+# everything below is dead code that's being reworked
+exit(0)
 
 # https://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
 # https://github.com/more-itertools/more-itertools/blob/4d2e1db/more_itertools/more.py#L2384-L2429
