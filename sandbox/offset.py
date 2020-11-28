@@ -50,6 +50,11 @@ except subprocess.CalledProcessError, e:
 # transform result into an array of lines (strings)
 diffs = cmp_result.splitlines()
 
+# exit if there's nothing to do
+if len(diffs) < 1:
+    print >> sys.stderr, "files are identical"
+    exit(1)
+
 diffs = list(map(lambda line: (lambda args = line.split(): {
     'old': format(int(args[1], 8), '02X'),
     'new': format(int(args[2], 8), '02X'),
