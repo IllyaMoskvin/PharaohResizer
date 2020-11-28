@@ -3,30 +3,48 @@
 # https://stackoverflow.com/questions/32967702/how-to-import-idautils-outside-ida-pro-using-python
 # Outdated: https://www.hex-rays.com/blog/running-scripts-from-the-command-line-with-idascript/
 #
-# It's meant to be used when you want to run IDAPython scripts from the commandline,
-# rather than from IDA. The main purpose of this class is to provide a way for you
-# to see the output of your `print` statements. All `stdout` will be writted to a
-# filenamed `idaout.txt` in the same directory as the invoking script. Broadly,
-# this script provides a framework for building IDA scripts. You can extend the
-# `IdaWriter` class, put your custom logic into the `process` method, and invoke
-# the writer by adding something like the following at the bottom of your script:
+# It's meant to ease the process of running IDAPython scripts from the commandline.
 #
-# if __name__ == "__main__":
-#     writer = CustomIdaWriter()
-#     writer.main(sys.argv)
+#  1. Create a new script to be invoked via IDA
+#  2. Import this module into your script
+#  3. Define a `CustomIdaWriter` class that extends `IdaWriter`
+#  4. Override the `process` method in `CustomIdaWriter`
+#  5. Add the following snippet to the bottom of your script:
 #
-# That said, most of the time, you'll want to output info using e.g. CSV files.
+#     if __name__ == "__main__":
+#         writer = CustomIdaWriter()
+#         writer.main(sys.argv)
+#
+# All `stdout` will be redirected to `idaout.txt` in the same directory as your script.
+# You can use the `import_data` and `export_data` convenience methods to import/export
+# data into your script via `tmp-to-ida.csv` and `tmp-from-ida.csv`, respectively.
 
 import sys
 import idaapi
 import idc
 import os
+import csv
 
 class IdaWriter:
 
     def process(self):
         # extend this class, override the process function, and call main
         return
+
+    def import_data(self, mapping):
+        with open('tmp-to-ida.csv') as csvfile:
+            data = list(map(lambda row: {
+                # https://stackoverflow.com/questions/12229064
+                key: func(row) for key, func in mapping.items()
+            }, csv.DictReader(csvfile)))
+        return data
+
+    def export_data(self, output, fieldnames):
+        with open('tmp-from-ida.csv', 'wb') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for datum in output:
+                writer.writerow(datum)
 
     def main(self, args):
         # get original stdout and output file descriptor
