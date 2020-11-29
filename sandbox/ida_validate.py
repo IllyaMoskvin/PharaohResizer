@@ -1,7 +1,7 @@
-from idaout import IdaWriter
+from idaout import IdaRunner
 import idc
 
-class CustomIdaWriter(IdaWriter):
+class CustomIdaRunner(IdaRunner):
 
     def process(self):
         data = self.import_data({
@@ -18,5 +18,5 @@ class CustomIdaWriter(IdaWriter):
                     + str(datum['cmp_byte']) + ' vs ' + str(datum['ida_byte']))
 
 if __name__ == "__main__":
-    writer = CustomIdaWriter()
+    writer = CustomIdaRunner()
     writer.main(sys.argv)

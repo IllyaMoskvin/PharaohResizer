@@ -7,44 +7,33 @@
 #
 #  1. Create a new script to be invoked via IDA
 #  2. Import this module into your script
-#  3. Define a `CustomIdaWriter` class that extends `IdaWriter`
-#  4. Override the `process` method in `CustomIdaWriter`
+#  3. Define a `CustomIdaRunner` class that extends `IdaRunner`
+#  4. Override the `process` method in `CustomIdaRunner`
 #  5. Add the following snippet to the bottom of your script:
 #
 #     if __name__ == "__main__":
-#         writer = CustomIdaWriter()
+#         writer = CustomIdaRunner()
 #         writer.main(sys.argv)
 #
 # All `stdout` will be redirected to `idaout.txt` in the same directory as your script.
 # You can use the `import_data` and `export_data` convenience methods to import/export
 # data into your script via `tmp-to-ida.csv` and `tmp-from-ida.csv`, respectively.
 
+from idashared import IdaInterfacer
+
 import sys
-import idaapi
 import idc
 import os
-import csv
 
-class IdaWriter:
+class IdaRunner(IdaInterfacer):
+
+    def __init__(self):
+        self.input_file = 'tmp-to-ida'
+        self.output_file = 'tmp-from-ida'
 
     def process(self):
         # extend this class, override the process function, and call main
         return
-
-    def import_data(self, mapping):
-        with open('tmp-to-ida.csv') as csvfile:
-            data = list(map(lambda row: {
-                # https://stackoverflow.com/questions/12229064
-                key: func(row) for key, func in mapping.items()
-            }, csv.DictReader(csvfile)))
-        return data
-
-    def export_data(self, output, fieldnames):
-        with open('tmp-from-ida.csv', 'wb') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for datum in output:
-                writer.writerow(datum)
 
     def main(self, args):
         # get original stdout and output file descriptor

@@ -28,6 +28,7 @@ import operator
 import itertools
 import os
 import csv
+from idain import IdaCaller
 
 if len(sys.argv) != 3:
     print >> sys.stderr, "Usage: ./offset.py Old.exe New.exe > offsets.yml"
@@ -72,41 +73,10 @@ diffs = list(map(lambda line: (lambda args = line.split(): {
     'new': int(args[2], 8),
 })(), diffs))
 
-# convenience function for calling ida with a script and passing data around
-def call_ida(script, file, fieldnames, data, mapping=None):
-    # clear output from previous script calls
-    for csvfile in ['tmp-to-ida.csv', 'tmp-from-ida.csv']:
-        if os.path.isfile(csvfile):
-            os.remove(csvfile)
-
-    # file should already be abs, but not script
-    script = os.path.abspath(script)
-    file = os.path.abspath(file)
-
-    # borrowed from `export_data` in `idaout`
-    with open('tmp-to-ida.csv', 'wb') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
-        writer.writeheader()
-        for datum in data:
-            writer.writerow(datum)
-
-    # https://www.hex-rays.com/products/ida/support/idadoc/417.shtml
-    subprocess.check_output(['idaq.exe', '-S"' + script + '"', file])
-
-    # borrowed from `import_data` in `idaout`
-    if os.path.isfile(file) and mapping != None:
-        with open('tmp-from-ida.csv') as csvfile:
-            output = list(map(lambda row: {
-                # https://stackoverflow.com/questions/12229064
-                key: func(row) for key, func in mapping.items()
-            }, csv.DictReader(csvfile)))
-    else:
-        output = []
-
-    return output
+caller = IdaCaller()
 
 # map file offsets in `cmp` results to virtual addresses
-offset_addresses = call_ida(
+offset_addresses = caller.call(
     script = 'ida_get_addresses.py',
     file = idb_old,
     fieldnames = ['offset'],
@@ -119,7 +89,7 @@ offset_addresses = call_ida(
 
 # sanity check: throw exception if bytes returned by `cmp` don't match IDA
 for target in [(idb_old, 'old'), (idb_new, 'new')]:
-    call_ida(
+    caller.call(
         script = 'ida_validate.py',
         file = target[0],
         fieldnames = ['address', 'byte'],

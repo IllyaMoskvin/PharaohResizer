@@ -2,6 +2,8 @@
 !.gitignore
 !ida_get_addresses.py
 !ida_validate.py
+!idain.py
 !idaout.py
+!idashared.py
 !offset.py
 !README.md
