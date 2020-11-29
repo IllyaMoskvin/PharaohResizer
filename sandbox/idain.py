@@ -37,3 +37,13 @@ class IdaCaller(IdaInterfacer):
             return self.import_data(mapping)
         else:
             return []
+
+    def call_with_list(self, script, file, data, func):
+        script, file = self.get_abs_paths(script, file)
+
+        self.clean_tmp_files()
+        self.export_data_list(data)
+        self.run_ida(script, file)
+
+        if os.path.isfile(file) and func != None:
+            return self.import_data_list(func)

@@ -19,3 +19,12 @@ class IdaInterfacer:
             writer.writeheader()
             for datum in output:
                 writer.writerow(datum)
+
+    def import_data_list(self, func):
+        with open(self.input_file) as file:
+            return list(map(func, file.read().splitlines()))
+
+    def export_data_list(self, output):
+        with open(self.output_file, 'wb') as file:
+            for datum in output:
+                file.write("%s\n" % datum)
