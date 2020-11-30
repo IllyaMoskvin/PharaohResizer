@@ -212,13 +212,23 @@ chunks = list(map(process_chunk, chunks))
 print '---';
 
 for chunk in chunks:
+    # figure out how much to pad each line before the comment
+    max_old = max(list(map(lambda instruction: len(instruction['bytes']), chunk['old'])))
+    max_new = max(list(map(lambda instruction: len(instruction['bytes']), chunk['new'])))
+    max_shared = max(max_old, max_new)
+
+    # 'offset' is shorter than 'address' by 1 character
+    pad_offset = len(str(chunk['address'])) - len(str(chunk['offset'])) + 1
+
     # https://stackoverflow.com/questions/51053227
-    print "- offset: '%s' # %s" % (chunk['offset'], format(chunk['offset'], '08X'))
-    print "  address: '%s' # %s" % (chunk['address'], format(chunk['address'], '08X'))
+    print "- offset: %d %s# %s" % (chunk['offset'], ''.ljust(pad_offset), format(chunk['offset'], '08X'))
+    print "  address: %d # %s" % (chunk['address'], format(chunk['address'], '08X'))
     print "  old:"
     for instruction in chunk['old']:
-        print "    - '%s' # %s" % (instruction['bytes'], instruction['disasm'])
+        pad = ''.ljust(max_shared - len(instruction['bytes']))
+        print "    - '%s' %s# %s" % (instruction['bytes'], pad, instruction['disasm'])
     print "  new:"
     for instruction in chunk['new']:
-        print "    - '%s' # %s" % (instruction['bytes'], instruction['disasm'])
+        pad = ''.ljust(max_shared - len(instruction['bytes']))
+        print "    - '%s' %s# %s" % (instruction['bytes'], pad, instruction['disasm'])
     print
