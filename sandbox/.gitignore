@@ -2,6 +2,7 @@
 !.gitignore
 !ida_extend.py
 !ida_get_addresses.py
+!ida_get_instructions.py
 !ida_validate.py
 !idain.py
 !idaout.py

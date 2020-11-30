@@ -128,6 +128,50 @@ def extend_addresses(addresses):
 # run the address extender on our address list
 addresses = extend_addresses(addresses)
 
+# transform address list back into dict
+addresses = [{'address': address} for address in addresses]
+
+# get bytes in hex and disasm for full instruction at each address, for both files
+def get_instructions(idb_file):
+    return caller.call(
+        script = 'ida_get_instructions.py',
+        file = idb_file,
+        fieldnames = ['address'],
+        data = addresses,
+        mapping = {
+            'address': lambda row: int(row['address']),
+            'offset': lambda row: int(row['offset']),
+            'disasm': lambda row: row['disasm'],
+            'bytes': lambda row: row['bytes'],
+        }
+    )
+
+old_instructions = get_instructions(idb_old)
+new_instructions = get_instructions(idb_new)
+
+instructions = []
+
+for index, old_instruction in enumerate(old_instructions):
+    new_instruction = new_instructions[index]
+
+    if new_instruction['offset'] != old_instruction['offset']:
+        raise Exception('misaligned offsets')
+
+    if new_instruction['address'] != old_instruction['address']:
+        raise Exception('misaligned addresses')
+
+    instructions.append({
+        'address': old_instruction['address'],
+        'offset': old_instruction['offset'],
+        'old_disasm': old_instruction['disasm'],
+        'new_disasm': new_instruction['disasm'],
+        'old_bytes': old_instruction['bytes'],
+        'new_bytes': new_instruction['bytes'],
+    })
+
+# debug: output all of the data so far
+caller.export_data(instructions,['address','offset','old_disasm','new_disasm','old_bytes','new_bytes'])
+
 # everything below is dead code that's being reworked
 exit(0)
 
