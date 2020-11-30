@@ -105,8 +105,6 @@ addresses = [oa['address'] for oa in offset_addresses]
 
 # we can't break out of nested loops, so put the loops inside a function and return
 def extend_addresses(addresses):
-    print 'Starting with ' + str(len(addresses)) + ' addresses from cmp...'
-
     # fill out the address list so that it contains complete instructions
     # alternate doing so between the new and old file until the list stabilizes
     while True:
@@ -119,10 +117,7 @@ def extend_addresses(addresses):
                 func = lambda row: int(row)
             )
 
-            print 'Extended to ' + str(len(addresses)) + ' after scanning ' + target
-
             if prev_addresses == addresses:
-                print 'Addresses have been stabilized!'
                 return addresses;
 
 # run the address extender on our address list
@@ -171,9 +166,6 @@ for index, old_instruction in enumerate(old_instructions):
         'old_start': old_instruction['start'],
         'new_start': new_instruction['start'],
     })
-
-# debug: output all of the data so far
-caller.export_data(instructions,['address','offset','old_disasm','new_disasm','old_bytes','new_bytes'])
 
 # everything below is dead code that's being reworked
 exit(0)
