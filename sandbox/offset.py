@@ -145,6 +145,7 @@ def get_instructions(idb_file):
 old_instructions = get_instructions(idb_old)
 new_instructions = get_instructions(idb_new)
 
+# combine instructions from the two files into one list
 instructions = []
 
 for index, old_instruction in enumerate(old_instructions):
@@ -167,9 +168,7 @@ for index, old_instruction in enumerate(old_instructions):
         'new_start': new_instruction['start'],
     })
 
-# everything below is dead code that's being reworked
-exit(0)
-
+# group instructions into chunks of consecutive offsets
 # https://stackoverflow.com/questions/2154249/identify-groups-of-continuous-numbers-in-a-list
 # https://github.com/more-itertools/more-itertools/blob/4d2e1db/more_itertools/more.py#L2384-L2429
 def consecutive_groups(iterable, ordering=lambda x: x):
@@ -178,7 +177,10 @@ def consecutive_groups(iterable, ordering=lambda x: x):
     ):
         yield map(operator.itemgetter(1), g)
 
-chunks = [n for n in consecutive_groups(diffs, lambda diff: diff['offset'])]
+chunks = [n for n in consecutive_groups(instructions, lambda instruction: instruction['offset'])]
+
+# everything below is dead code that's being reworked
+exit(0)
 
 #TODO: format(int(args[1], 8), '02X'),
 chunks = list(map(lambda diffs: {
