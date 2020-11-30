@@ -10,16 +10,17 @@ class CustomIdaRunner(IdaRunner):
         })
 
         for datum in data:
+            start = idc.ItemHead(datum['address'])
+            end = idc.ItemEnd(datum['address'])
+
             datum['offset'] = idaapi.get_fileregion_offset(datum['address'])
             datum['disasm'] = idc.GetDisasm(datum['address'])
-            datum['bytes'] = self.get_bytes_as_hex(datum['address'])
+            datum['bytes'] = self.get_bytes_as_hex(start, end)
+            datum['start'] = start
 
-        self.export_data(data, ['address','offset', 'disasm', 'bytes'])
+        self.export_data(data, ['address','offset', 'disasm', 'bytes', 'start'])
 
-    def get_bytes_as_hex(self, address):
-        start = idc.ItemHead(address);
-        end = idc.ItemEnd(address)
-
+    def get_bytes_as_hex(self, start, end):
         items = idc.GetManyBytes(start, end-start)
         items = [i.encode('hex') for i in items]
         items = [i.upper() for i in items]

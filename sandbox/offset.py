@@ -143,6 +143,7 @@ def get_instructions(idb_file):
             'offset': lambda row: int(row['offset']),
             'disasm': lambda row: row['disasm'],
             'bytes': lambda row: row['bytes'],
+            'start': lambda row: int(row['start']),
         }
     )
 
@@ -167,6 +168,8 @@ for index, old_instruction in enumerate(old_instructions):
         'new_disasm': new_instruction['disasm'],
         'old_bytes': old_instruction['bytes'],
         'new_bytes': new_instruction['bytes'],
+        'old_start': old_instruction['start'],
+        'new_start': new_instruction['start'],
     })
 
 # debug: output all of the data so far
