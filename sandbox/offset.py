@@ -179,16 +179,38 @@ def consecutive_groups(iterable, ordering=lambda x: x):
 
 chunks = [n for n in consecutive_groups(instructions, lambda instruction: instruction['offset'])]
 
+# group bytes and disasm for each chunk by start of instruction
+def process_chunk(instructions):
+    out = {
+        'offset': instructions[0]['offset'],
+        'address': instructions[0]['address'],
+        'old': [],
+        'new': [],
+    }
+
+    prev_old_start = None
+    prev_new_start = None
+
+    for instruction in instructions:
+        if instruction['old_start'] != prev_old_start:
+            prev_old_start = instruction['old_start']
+            out['old'].append({
+                'bytes': instruction['old_bytes'],
+                'disasm': instruction['old_disasm'],
+            })
+        if instruction['new_start'] != prev_new_start:
+            prev_new_start = instruction['new_start']
+            out['new'].append({
+                'bytes': instruction['new_bytes'],
+                'disasm': instruction['new_disasm'],
+            })
+
+    return out
+
+chunks = list(map(process_chunk, chunks))
+
 # everything below is dead code that's being reworked
 exit(0)
-
-#TODO: format(int(args[1], 8), '02X'),
-chunks = list(map(lambda diffs: {
-    # https://stackoverflow.com/questions/51053227
-    'offset': format(diffs[0]['offset'], '08X'),
-    'old': ' '.join(map(operator.itemgetter('old'), diffs)),
-    'new': ' '.join(map(operator.itemgetter('new'), diffs)),
-}, chunks))
 
 print '---';
 
