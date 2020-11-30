@@ -209,13 +209,16 @@ def process_chunk(instructions):
 
 chunks = list(map(process_chunk, chunks))
 
-# everything below is dead code that's being reworked
-exit(0)
-
 print '---';
 
 for chunk in chunks:
-    print "- offset: '%s'" % chunk['offset']
-    print "  old: '%s'" % chunk['old']
-    print "  new: '%s'" % chunk['new']
+    # https://stackoverflow.com/questions/51053227
+    print "- offset: '%s' # %s" % (chunk['offset'], format(chunk['offset'], '08X'))
+    print "  address: '%s' # %s" % (chunk['address'], format(chunk['address'], '08X'))
+    print "  old:"
+    for instruction in chunk['old']:
+        print "    - '%s' # %s" % (instruction['bytes'], instruction['disasm'])
+    print "  new:"
+    for instruction in chunk['new']:
+        print "    - '%s' # %s" % (instruction['bytes'], instruction['disasm'])
     print
